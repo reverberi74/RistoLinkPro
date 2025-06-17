@@ -1,8 +1,9 @@
-import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
 import CustomImage from "../shared/CustomImage";
 import Menu from "../shared/Menu";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCart } from "../../store/actions/cartActions";
 /**
  * Componente Navbar principale dell'app lato utente.
  *
@@ -24,6 +25,12 @@ const Navbar = () => {
   const [selectMenu, setSelectMenu] = useState(false);
   const items = useSelector((state) => state.cart.items);
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+  const dispatch = useDispatch();
+  
+
+  useEffect(() => {
+    dispatch(fetchCart());
+  }, [dispatch]);
 
   const toggleMenu = () => {
     setSelectMenu((p) => !p);
@@ -92,7 +99,7 @@ const Navbar = () => {
               )}
 
             </div>
-            {selectMenu && <Menu toggleMenu={toggleMenu}/>}
+            {selectMenu && <Menu toggleMenu={toggleMenu} />}
           </div>
         </div>
       </div>

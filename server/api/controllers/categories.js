@@ -12,7 +12,7 @@ const getAllCategories = async (req, res) => {
     const user = req.params.business_id;
 
     try {
-        const categories = await Category.find({ user }, null, { lean: true });
+        const categories = await Category.find({ user }, null, { lean: true }).sort({ order: 1, name: 1 });
 
         return res.status(201).json(categories);
     } catch (err) {
@@ -47,7 +47,7 @@ const getCategoryById = async (req, res) => {
  */
 const createCategory = async (req, res) => {
     const user = req.user;
-    
+
     const schema = Joi.object().keys({
         name: Joi.string().required(),
         description: Joi.string().required(),
@@ -74,11 +74,12 @@ const createCategory = async (req, res) => {
 const updateCategoryById = async (req, res) => {
     const user = req.user;
     const _id = req.params.category_id;
-    
+
     const schema = Joi.object().keys({
         name: Joi.string().optional(),
         description: Joi.string().optional(),
         image: Joi.string().optional(),
+        order: Joi.number().integer().min(0).optional(),
     });
 
     try {

@@ -1,4 +1,5 @@
-const { Schema, model } = require("mongoose");
+const mongoose = require("mongoose");
+const { Schema, model } = mongoose;
 
 const CategorySchema = new Schema({
     user: {
@@ -17,9 +18,11 @@ const CategorySchema = new Schema({
     image: {
         type: String,
         required: true,
+    },
+    order: {
+        type: Number, // 🔧 Aggiunto campo opzionale per ordinamento
+        default: null
     }
 }, { strict: true, timestamps: true, versionKey: false });
 
-const Category = model("Category", CategorySchema);
-
-module.exports = Category;
+module.exports = model("Category", CategorySchema);

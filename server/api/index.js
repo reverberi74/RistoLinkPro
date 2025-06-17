@@ -31,4 +31,10 @@ app.use("/search", require("./routes/search"));
  */
 app.use("/reviews", require("./routes/reviews"));
 
+try {
+  app.use("/cart", require("./routes/cartRoutes"));
+} catch (err) {
+  console.error("Errore nella route /cart:", err);
+}
+
 module.exports = app;

@@ -1,3 +1,5 @@
+import { fetchCart, clearCartDB } from '../../store/actions/cartActions';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { clearCart, updateCartStatus } from '../../store/slices/cartSlice';
@@ -6,6 +8,7 @@ import { useToast } from '../../hooks/useToast';
 import { setOrder } from '../../store/slices/orderSlice';
 import CartEmpty from './CartEmpty';
 import BackButton from '../../components/shared/BackButton';
+
 
 /**
  * Pagina del carrello che mostra l'elenco dei prodotti selezionati dall'utente.
@@ -17,11 +20,21 @@ import BackButton from '../../components/shared/BackButton';
  * Utilizza Redux per gestire lo stato del carrello.
  */
 const Cart = () => {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const cart = useSelector((state) => state.cart);
+  const user = useSelector((state) => state.auth.user);
   const items = cart.items;
+  useEffect(() => {
+    if (user?._id) {
+      dispatch(fetchCart());
+    }
+  }, [dispatch, user]);
+
+
+
+
 
   /**
    * Calcolo del subtotale: somma di (prezzo * quantità) per ogni articolo.
@@ -52,7 +65,9 @@ const Cart = () => {
    */
 
   const handleSubmitOrder = () => {
-    dispatch(setOrder(cart.items)); // Copia ordine
+    if (items.length === 0) return;
+
+    dispatch(setOrder(cart.items));
     dispatch(updateCartStatus(false));
     toast.success("Il tuo ordine è stato inviato!");
     navigate("/private/order-cart");
@@ -68,7 +83,7 @@ const Cart = () => {
           src="/images/cv.jpg"
           alt="Svuota carrello"
           className="w-8 h-8 absolute right-4 top-5 cursor-pointer bg-white object-contain"
-          onClick={() => dispatch(clearCart())}
+          onClick={() => dispatch(clearCartDB())}
         />
       </div>
 

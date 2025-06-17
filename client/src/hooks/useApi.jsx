@@ -109,3 +109,29 @@ export const ApiProvider = ({ children }) => {
 export const useApi = () => {
     return useContext(ApiContext);
 }
+
+export const api = {
+    get: (path) => axios.get(`${config.API_BASE_URL}/api${path}`, {
+        headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+    }),
+
+    post: (path, payload) => axios.post(`${config.API_BASE_URL}/api${path}`, payload, {
+        headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+    }),
+
+    put: (path, payload) => axios.put(`${config.API_BASE_URL}/api${path}`, payload, {
+        headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+    }),
+
+    del: (path) => axios.delete(`${config.API_BASE_URL}/api${path}`, {
+        headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+    }),
+};
