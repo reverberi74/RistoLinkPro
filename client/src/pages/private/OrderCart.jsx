@@ -1,43 +1,49 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+
 import OrderItem from "../../components/shared/orderItem";
-/**
- * Componente che visualizza lo stato corrente dell’ordine dell’utente.
- * - Mostra i piatti ordinati e il loro stato (in preparazione, servito).
- * - Permette il pagamento in app o il ritorno al menù.
- */
+import { fetchActiveOrder, markOrderAsPaid } from "../../store/slices/orderSlice";
+
 const OrderCart = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  /**
-   * Estrae dal Redux store l’elenco dei piatti ordinati.
-   * @type {Array<{
-   *   _id: string,
-   *   title: string,
-   *   price: string | number,
-   *   quantity: number,
-   *   status: "preparing" | "served"
-   * }>}
-   */
-  const { items } = useSelector((state) => state.order);
 
-  /**
-   * Calcola il subtotale dell’ordine sommando (prezzo × quantità) per ogni piatto.
-   * Il prezzo può essere stringa o numero, quindi viene convertito con parseFloat.
-   * Se il prezzo o la quantità non sono validi, si assume zero.
-   * @type {number}
-   */
-  const subtotal = items.reduce((sum, item) => {
-    const price = parseFloat(item.price) || 0;
-    const qty = item.quantity || 0;
-    return sum + price * qty;
-  }, 0);
+  const {
+    items = [],
+    subtotal = 0,
+    taxes = 0,
+    service = 0,
+    total = 0,
+    status,
+    error,
+  } = useSelector((state) => state.order);
 
-  // Calcoli aggiuntivi
-  const tasse = subtotal * 0.1; // 10% di tasse
-  const servizio = 2; // Servizio fisso
-  const totale = subtotal + tasse + servizio; // Totale finale
+  const user = useSelector((state) => state.auth.user);
+  const token = useSelector((state) => state.auth.token);
+
+  const allServed = items.every((item) => item.status === "served");
+
+  useEffect(() => {
+    if (!user?._id || !token) return;
+
+    const fetchOrder = () => {
+      dispatch(fetchActiveOrder({ userId: user._id, token }));
+    };
+
+    fetchOrder(); // Primo fetch immediato
+
+    const interval = setInterval(fetchOrder, 10000); // ogni 10s
+
+    return () => clearInterval(interval); // pulizia all'unmount
+  }, [dispatch, user, token]);
+
+  /*const handleConfirmPayment = () => {
+    if (!user?._id || !token) return;
+    dispatch(markOrderAsPaid({ orderId: user._id, token }));
+    navigate("/private/payments");
+  };*/
 
   return (
     <div className="flex flex-col items-center justify-center bg-white mx-auto max-w-[23.4375rem] w-full font-sans">
@@ -54,7 +60,11 @@ const OrderCart = () => {
 
       {/* CONTENUTO */}
       <div className="flex flex-col items-center w-[375px] px-4 pb-24 rounded-t-3xl bg-white w-full h-10">
-        {items.length === 0 ? (
+        {status === "loading" ? (
+          <div className="mt-20 text-gray-600">Caricamento ordine...</div>
+        ) : error ? (
+          <div className="mt-20 text-red-500">{error}</div>
+        ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center bg-white w-full mt-20 text-center p-6 rounded-2xl shadow-sm">
             <img
               src="/images/empty-cart.jpg"
@@ -72,17 +82,22 @@ const OrderCart = () => {
             </button>
           </div>
         ) : (
-          <div className="w-full mt-4 relative pb-24">
-            {/* PAGA IN APP */}
+          <div className="w-full mt-4 relative pb-32">
+            {/* INFO PAGA IN APP */}
             <div className="flex mb-4 px-2">
-              <div className="flex justify-between mb-1 w-full item-center bg-[#DADBF1] rounded-3xl px-4 py-4">
-                <span className="tracking-wide text-xs cursor-pointer text-gray-600 px-1 mt-2.5 text-nowrap"
-                  onClick={() => navigate("/private/payments")}>
+              <div className="flex justify-between mb-1 w-full items-center bg-[#DADBF1] rounded-3xl px-4 py-4">
+                <span
+                  className="tracking-wide text-xs text-gray-600 px-1 mt-2.5 text-nowrap"
+                >
                   Paga in modo più intelligente
                 </span>
                 <button
-                  onClick={() => navigate("/private/payments")}
-                  className="bg-[#FFFFFF] text-black cursor-pointer justify-self-end px-4 py-2 rounded-full text-sm shadow-elevation-1"
+                  onClick={() => allServed && navigate("/private/payments")}
+                  disabled={!allServed}
+                  className={`px-4 py-2 rounded-full text-sm shadow-elevation-1 ${allServed
+                    ? "bg-white text-black cursor-pointer"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
                 >
                   Paga in App
                 </button>
@@ -96,7 +111,7 @@ const OrderCart = () => {
               ))}
             </div>
 
-            {/* RIEPILOGO TOTALE */}
+            {/* RIEPILOGO */}
             <div className="text-sm pb-10 text-gray-600 px-1 mt-2">
               <div className="flex justify-between mb-1">
                 <span>Subtotale:</span>
@@ -104,19 +119,19 @@ const OrderCart = () => {
               </div>
               <div className="flex justify-between mb-1">
                 <span>Tasse:</span>
-                <span>{tasse.toFixed(2)}€</span>
+                <span>{taxes.toFixed(2)}€</span>
               </div>
               <div className="flex justify-between mb-1">
                 <span>Servizio:</span>
-                <span>{servizio.toFixed(2)}€</span>
+                <span>{service.toFixed(2)}€</span>
               </div>
               <div className="flex justify-between font-semibold text-[#111827] text-base mt-2">
                 <span>Totale:</span>
-                <span>{totale.toFixed(2)}€</span>
+                <span>{total.toFixed(2)}€</span>
               </div>
             </div>
 
-            {/* FOOTER FISSO Bottone TORNA AL MENU */}
+            {/* FOOTER FISSO */}
             <div
               className="fixed bottom-0 py-6 left-[50%] w-full bg-white pt-4 flex justify-center z-40"
               style={{ transform: "translateX(-50%)" }}

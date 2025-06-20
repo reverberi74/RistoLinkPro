@@ -37,4 +37,10 @@ try {
   console.error("Errore nella route /cart:", err);
 }
 
+try {
+  app.use("/orders", require("./routes/orderRoutes"));  
+} catch (err) {
+  console.error("Errore nella route /orders:", err);
+}
+
 module.exports = app;

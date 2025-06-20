@@ -5,9 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { clearCart, updateCartStatus } from '../../store/slices/cartSlice';
 import CartItem from '../../components/shared/CartItem';
 import { useToast } from '../../hooks/useToast';
-import { setOrder } from '../../store/slices/orderSlice';
 import CartEmpty from './CartEmpty';
 import BackButton from '../../components/shared/BackButton';
+import axios from '../../api/axiosInstance';
 
 
 /**
@@ -25,6 +25,7 @@ const Cart = () => {
   const { toast } = useToast();
   const cart = useSelector((state) => state.cart);
   const user = useSelector((state) => state.auth.user);
+  const token = useSelector((state) => state.auth.token);
   const items = cart.items;
   useEffect(() => {
     if (user?._id) {
@@ -63,14 +64,35 @@ const Cart = () => {
    * - Pulisce il carrello.
    * - Dopo 2 secondi, naviga alla pagina /categories.
    */
+  const tableNumber = useSelector((state) => state.tableClient.tableNumber);
 
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = async () => {
     if (items.length === 0) return;
+    const orderData = {
+      items,
+      subtotal,
+      taxes: tasse,
+      service: servizio,
+      tip: 0,
+      total: totale,
+      tableNumber: tableNumber || null, // 👈 Aggiunto
+    };
 
-    dispatch(setOrder(cart.items));
-    dispatch(updateCartStatus(false));
-    toast.success("Il tuo ordine è stato inviato!");
-    navigate("/private/order-cart");
+    try {
+      if (!token) throw new Error("Token mancante");
+
+      await axios.post("/orders", orderData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      toast.success("Il tuo ordine è stato inviato!");
+      navigate("/private/order-cart");
+    } catch (err) {
+      toast.error("Errore nell'invio dell'ordine");
+      console.error(err);
+    }
   };
 
   return (

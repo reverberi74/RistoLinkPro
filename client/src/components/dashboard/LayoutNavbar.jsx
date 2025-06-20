@@ -4,6 +4,7 @@ import CustomImage from "../shared/CustomImage";
 const nameMap = {
   dashboard: "Dashboard",
   tables: "Tavoli",
+  orders: "Gestione Ordini",
   reviews: "Recensioni",
   menu: "Gestione Menu",
 }

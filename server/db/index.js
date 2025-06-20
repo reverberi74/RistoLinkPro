@@ -9,7 +9,7 @@ const connect = async () => {
         await mongoose.connect(DB_URI);
 
         log("Database connected...");
-    } catch(err) {
+    } catch (err) {
         log(err.message, "error");
     }
 }
@@ -19,7 +19,7 @@ const disconnect = async () => {
         await mongoose.disconnect();
 
         log("Database disconnected...");
-    } catch(err) {
+    } catch (err) {
         log(err.message, "error");
     }
 }
@@ -32,10 +32,11 @@ const models = {
     Label: require("./models/Label"),
     Product: require("./models/Product"),
     BusinessProfile: require("./models/BusinessProfile"),
+    Order: require("./models/Order"),
 }
 
 module.exports = {
-    connect, 
+    connect,
     disconnect,
     ...models,
 }

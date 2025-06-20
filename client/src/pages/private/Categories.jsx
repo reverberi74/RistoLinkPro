@@ -7,10 +7,12 @@ import { setCurrentCategory } from '../../store/slices/categorySlice'
 import CategoryItem from '../../components/shared/CategoryItem'
 import { setCurrentProduct } from '../../store/slices/productSlice'
 import ProductItem from '../../components/shared/ProductItem'
+import { useSearchParams } from 'react-router-dom';
 
 const Categories = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+     const [searchParams] = useSearchParams();  
     const { all: categories } = useSelector((state) => state.categories);
     const { products: filteredProducts } = useSelector((state) => state.search);
     const [query, setQuery] = useState("")
@@ -33,6 +35,14 @@ const Categories = () => {
             dispatch(clearSearchResult())
         }
     }, [query])
+
+    // Salva numero tavolo dal QR code
+    useEffect(() => {
+        const table = searchParams.get("table");
+        if (table) {
+            localStorage.setItem("tableNumber", table);
+        }
+    }, [searchParams]);
 
     return (
         <div className="flex justify-center bg-white mx-auto max-w-[23.4375rem] w-full font-sans">

@@ -1,11 +1,6 @@
-// src/utils/apiStandalone.js
 import axios from "axios";
 import { config } from "../config";
 
-/**
- * API standalone compatibile con Redux Toolkit (thunk extraArgument)
- * Usa `getState()` per accedere al token in automatico.
- */
 export const api = {
   get: async (path, token) => {
     const res = await axios.get(`${config.API_BASE_URL}/api${path}`, {

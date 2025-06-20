@@ -1,7 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-
-// Import API standalone per i thunk
-import { api } from "../utilities/apiStandalone";
+import { api } from "../utilities/apiStandalone"; // ✅ API standalone per i thunk
 
 // Slices principali
 import authSlice from "./slices/authSlice";
@@ -10,17 +8,17 @@ import productSlice from "./slices/productSlice";
 import searchSlice from "./slices/searchSlice";
 import labelSlice from "./slices/labelSlice";
 import cartSlice from "./slices/cartSlice";
+import orderReducer from "./slices/orderSlice";
 import settingsSlice from "./slices/settingsSlice";
-import filtersReducer from './slices/categoryFilterSlice';
-import orderSlice from "./slices/orderSlice";
-import sortSlice from './slices/sortSlice'; // CORRETTO: questo è per gestire l'ordinamento
+import filtersReducer from "./slices/categoryFilterSlice";
+import sortSlice from "./slices/sortSlice";
+import bestSellersReducer from "./slices/bestSellersSlice";
+import tableClientReducer from './slices/tableClientSlice';
 
-// Slices del dashboard business
+// Slices dashboard business
 import tableReducer from "./slices/dashboard/tableSlice";
 import reviewsSlice from "./slices/dashboard/reviewsSlice";
-
-// Best sellers
-import bestSellersReducer from "./slices/bestSellersSlice";
+import businessOrderReducer from "./slices/dashboard/businessOrderSlice";
 
 export default configureStore({
   reducer: {
@@ -30,18 +28,20 @@ export default configureStore({
     search: searchSlice,
     labels: labelSlice,
     cart: cartSlice,
-    order: orderSlice,
+    order: orderReducer,
+    tableClient: tableClientReducer,
     settings: settingsSlice,
     filters: filtersReducer,
     sort: sortSlice,
     bestSellers: bestSellersReducer,
     tables: tableReducer,
     reviews: reviewsSlice,
+    dashboardOrders: businessOrderReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       thunk: {
-        extraArgument: { api }, // ✅ passaggio fondamentale
+        extraArgument: { api },
       },
       serializableCheck: false,
     }),

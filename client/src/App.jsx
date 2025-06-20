@@ -1,4 +1,9 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
+import { setTableNumber, setTableNotification } from "./store/slices/tableClientSlice";
+import { toast } from "react-toastify"; // se usi react-toastify
 import Private from "./layout/Private";
 import Public from "./layout/Public";
 import Login from "./pages/Login";
@@ -11,8 +16,7 @@ import ConfirmPayment from "./pages/private/ConfirmPayment";
 import OrderList from "./pages/private/OrderList";
 
 
-import Cart from "./pages/private/Cart"; // carrello
-import { useSelector } from "react-redux";
+import Cart from "./pages/private/Cart";
 import PublicBusiness from "./layout/PublicBusiness";
 import PrivateBusiness from "./layout/PrivateBusiness";
 import Reviews from "./pages/dashboard/Reviews";
@@ -24,18 +28,43 @@ import CartEmpty from "./pages/private/CartEmpty";
 
 import MenuBusiness from "./pages/dashboard/MenuBusiness";
 import PersonalProfile from "./pages/private/PersonalProfile"
+import OrderDashboard from "./pages/dashboard/OrderDashboard";
 
 
 const ProtectRoute = ({ children, role = "user" }) => {
   const { token, user } = useSelector((state) => state.auth);
 
-  if (!token || role !== user.role)
-    return <Navigate to={role == "user" ? "/" : "/business/login"} />;
+  if (!token || !user || role !== user.role)
+    return <Navigate to={role === "user" ? "/" : "/business/login"} />;
 
   return children;
 };
 
 const App = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const tableNumber = useSelector((state) => state.tableClient.tableNumber);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const table = urlParams.get("table");
+
+    if (table && table !== tableNumber) {
+      dispatch(setTableNumber(Number(table)));
+      localStorage.setItem("tableNumber", Number(table));
+      dispatch(setTableNotification(`Tavolo ${table} selezionato`));
+
+      if (isAuthenticated) {
+        toast.success(`Tavolo ${table} impostato correttamente!`);
+        navigate("/private/categories");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, dispatch, isAuthenticated, navigate, tableNumber]);
+
   return (
     <>
       <Routes>
@@ -66,7 +95,7 @@ const App = () => {
         {/* login per business */}
         <Route path="/business" element={<PublicBusiness />}>
           <Route path="login" element={<LoginBusiness />} />
-         
+
         </Route>
         {/* Business loggato */}
         <Route
@@ -80,8 +109,8 @@ const App = () => {
           <Route path="" element={<Dashboard />} />
           <Route path="reviews" element={<Reviews />} />
           <Route path="tables" element={<Tables />} />
-           <Route path="tables" element={<Tables />} />  
-           <Route path="menu" element={<MenuBusiness />} />  
+          <Route path="orders" element={<OrderDashboard />} />
+          <Route path="menu" element={<MenuBusiness />} />
         </Route>
       </Routes>
     </>
