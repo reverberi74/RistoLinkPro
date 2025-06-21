@@ -2,19 +2,20 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllOrders, updateOrderItemStatus } from "../../store/slices/dashboard/businessOrderSlice";
 import OrderItemInDashboard from "../../components/shared/dashboard/OrderItemInDashboard";
-
+import { useApi } from "../../hooks/useApi";
 
 const OrderDashboard = () => {
   const dispatch = useDispatch();
   const orders = useSelector((state) => state.dashboardOrders.orders);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const { put } = useApi();
+   
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        await dispatch(getAllOrders()).unwrap(); // <-- assegna a "result"
-        //console.log("📦 ORDINI DAL BACKEND:", result);
+        await dispatch(getAllOrders()).unwrap();
       } catch (error) {
         console.error("Errore nel recupero degli ordini:", error);
       } finally {
@@ -29,24 +30,32 @@ const OrderDashboard = () => {
   };
 
   const handleGlobalSwitch = async (order) => {
-    const newStatus = order.items.every((item) => item.status === "served")
-      ? "preparing"
-      : "served";
 
-    try {
-      // ✅ Usa solo gli aggiornamenti singoli
-    order.items.forEach((item) => {
-      dispatch(
-        updateOrderItemStatus({
-          orderId: order._id,
-          itemId: item._id,
-          status: newStatus,
-            })
-          );
-    });
-    } catch (err) {
-      console.error("Errore nell'aggiornamento degli stati:", err);
+    const newStatus = order.items.some(item => item.status === "preparing")
+      ? "served"
+      : "preparing";
+
+    for (const item of order.items) {
+      try {
+        // Aggiorna Redux
+        await dispatch(
+          updateOrderItemStatus({
+            orderId: order._id,
+            itemId: item._id,
+            status: newStatus,
+          })
+        );
+
+        // Aggiorna DB
+        await put(`/orders/${order._id}/item/${item._id}`, { status: newStatus });
+
+      } catch (err) {
+        console.error("Errore aggiornamento piatto:", err);
+      }
     }
+
+    // Dopo aver aggiornato tutti i piatti, aggiorna la lista degli ordini
+    await dispatch(getAllOrders());
   };
 
   return (
