@@ -1,17 +1,23 @@
-// Container - Mostra tutti i tavoli, gestisce espansione
-import React, { useState } from "react";
-import { useSelector } from "react-redux";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import TableItem from "../../components/shared/dashboard/TableItem";
+import { fetchTablesFromOrders } from "../../store/slices/dashboard/tableSlice";
 
 const Tables = () => {
   const [selectedTab, setSelectedTab] = useState("Tutti");
   const [expanded, setExpanded] = useState(null);
+  const dispatch = useDispatch();
 
-  const tables = useSelector((state) => state.tables.tables);
+  const { tables, loading, error } = useSelector((state) => state.tables);
 
-  const filteredData = selectedTab === "Aperti"
-    ? tables.filter((t) => t.status === "Aperto")
-    : tables;
+  useEffect(() => {
+    dispatch(fetchTablesFromOrders());
+  }, [dispatch]);
+
+  const filteredData =
+    selectedTab === "Aperti"
+      ? tables.filter((t) => t.status === "Aperto")
+      : tables;
 
   const toggleExpand = (id) => {
     setExpanded((prev) => (prev === id ? null : id));
@@ -19,12 +25,12 @@ const Tables = () => {
 
   return (
     <div className="bg-white max-w-[972px] w-full mx-auto px-4">
-      {/* Bottoni */}
+      {/* Bottoni filtro */}
       <div className="mb-4 flex justify-start">
         <button
-          className={`py-2 px-8 cursor-pointer rounded-full mr-2 text-[14px]  ${selectedTab === "Tutti"
-            ? "bg-[#070FA3] text-white"
-            : "bg-[#070FA326] text-gray-700"
+          className={`py-2 px-8 cursor-pointer rounded-full mr-2 text-[14px] ${selectedTab === "Tutti"
+              ? "bg-[#070FA3] text-white"
+              : "bg-[#070FA326] text-gray-700"
             }`}
           onClick={() => setSelectedTab("Tutti")}
         >
@@ -32,8 +38,8 @@ const Tables = () => {
         </button>
         <button
           className={`py-2 px-8 cursor-pointer rounded-full mr-2 text-[14px] mr-2.5 ${selectedTab === "Aperti"
-            ? "bg-[#070FA3] text-white"
-            : "bg-[#070FA326] text-gray-700"
+              ? "bg-[#070FA3] text-white"
+              : "bg-[#070FA326] text-gray-700"
             }`}
           onClick={() => setSelectedTab("Aperti")}
         >
@@ -50,9 +56,24 @@ const Tables = () => {
         <div className="justify-self-center">Stato</div>
       </div>
 
-      {/* Righe */}
+      {/* Stato del caricamento */}
+      {loading && (
+        <div className="text-center py-6 text-gray-500">Caricamento tavoli...</div>
+      )}
+      {error && (
+        <div className="text-center py-6 text-red-500">
+          Errore: {error}
+        </div>
+      )}
+
+      {/* Righe tavoli */}
       {filteredData.map((table) => (
-        <TableItem key={table.id} table={table} expanded={expanded} toggleExpand={toggleExpand} />
+        <TableItem
+          key={table.orderId || table.id}
+          table={table}
+          expanded={expanded}
+          toggleExpand={toggleExpand}
+        />
       ))}
     </div>
   );

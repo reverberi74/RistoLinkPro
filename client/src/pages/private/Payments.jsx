@@ -51,9 +51,12 @@ const Payments = () => {
 
   const handleCompletePayment = async () => {
     try {
-      await put(`/orders/${orderId}/paid`, {
+     
+      const response = await put(`/orders/${orderId}/paid`, {
         tipAmount: selectedTip?.amount || 0,
       });
+      //console.log("Ordine aggiornato:", response);
+      //console.log("Pagamento completato per ordine:", orderId);
 
       dispatch(clearOrder());
       dispatch(clearCart());

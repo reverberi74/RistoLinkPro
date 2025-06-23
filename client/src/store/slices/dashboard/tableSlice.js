@@ -1,124 +1,93 @@
-//Redux slice -	Stato globale dei tavoli, azioni e reducer
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 
-const initialState = {
-  tables: [
-    {
-        id: 1,
-        time: "12.33",
-        total: "67,00 €",
-        tip: "5,00 €",
-        status: "Pagato",
-        items: [
-            { name: "Tartare di manzo in stile orientale (x 2)", price: "19,60 €" },
-            { name: "Bruschetta con pomodori", price: "3,20 €" },
-            { name: "Polentina con funghi porcini e lardo", price: "6,00 €" },
-        ],
-        subtotal: "28,80 €",
-        service: "2,00 €",
-        totalFull: "30,80 €",
-    },
-    {
-        id: 5,
-        time: "12.52",
-        total: "150,00 €",
-        tip: "-",
-        status: "Aperto",
-        items: [
-            { name: "Tartare di manzo in stile orientale (x 2)", price: "19,60 €" },
-            { name: "Bruschetta con pomodori", price: "3,20 €" },
-            { name: "Polentina con funghi porcini e lardo", price: "6,00 €" },
-        ],
-        subtotal: "28,80 €",
-        service: "2,00 €",
-        totalFull: "30,80 €",
-    },
-    {
-        id: 15,
-        time: "13.13",
-        total: "85,00 €",
-        tip: "2,00 €",
-        status: "Pagato",
-        items: [
-            { name: "Tartare di manzo in stile orientale (x 2)", price: "19,60 €" },
-            { name: "Bruschetta con pomodori", price: "3,20 €" },
-            { name: "Polentina con funghi porcini e lardo", price: "6,00 €" },
-        ],
-        subtotal: "28,80 €",
-        service: "2,00 €",
-        totalFull: "30,80 €",
-    },
-    {
-        id: 7,
-        time: "13.20",
-        total: "0,00 €",
-        tip: "-",
-        status: "Pagato",
-        items: [
-            { name: "Tartare di manzo in stile orientale (x 2)", price: "19,60 €" },
-            { name: "Bruschetta con pomodori", price: "3,20 €" },
-            { name: "Polentina con funghi porcini e lardo", price: "6,00 €" },
-        ],
-        subtotal: "28,80 €",
-        service: "2,00 €",
-        totalFull: "30,80 €",
-    },
-    {
-        id: 12,
-        time: "13.25",
-        total: "72,00 €",
-        tip: "-",
-        status: "Aperto",
-        items: [
-            { name: "Tartare di manzo in stile orientale (x 2)", price: "19,60 €" },
-            { name: "Bruschetta con pomodori", price: "3,20 €" },
-            { name: "Polentina con funghi porcini e lardo", price: "6,00 €" },
-        ],
-        subtotal: "28,80 €",
-        service: "2,00 €",
-        totalFull: "30,80 €",
-    },
-    {
-        id: 9,
-        time: "13.37",
-        total: "0,00 €",
-        tip: "-",
-        status: "Pagato",
-        items: [
-            { name: "Tartare di manzo in stile orientale (x 2)", price: "19,60 €" },
-            { name: "Bruschetta con pomodori", price: "3,20 €" },
-            { name: "Polentina con funghi porcini e lardo", price: "6,00 €" },
-        ],
-        subtotal: "28,80 €",
-        service: "2,00 €",
-        totalFull: "30,80 €",
-    },
-  ],
-};
-/**
- *Reducer chiamato toggleTableStatus, che riceve:
-  state: lo stato corrente dello slice ({ tables: [...] })
-  action: l’azione Redux inviata, con un payload contenente l’id del tavolo da aggiornare.
-  const id = action.payload (Estrae l’id del tavolo da modificare dall’oggetto action.payload)
-  Cerca nell’array tables il tavolo corrispondente all’id ricevuto, usando Array.find()
-  Controlla se ha trovato un tavolo con quell’id.
-  Se lo trova, inverte lo stato del tavolo:
-  Se è "Pagato" → diventa "Aperto"
-  Altrimenti → diventa "Pagato"
- */ 
+// Thunk per ottenere tutti gli ordini (tavoli)
+export const fetchTablesFromOrders = createAsyncThunk(
+  "tables/fetchTablesFromOrders",
+  async (_, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.token;
+
+      const res = await axios.get("/api/orders/all", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const orders = res.data;
+
+      const tables = orders.map((order) => {
+        const {
+          _id: orderId,
+          tableNumber,
+          createdAt,
+          paid,
+          subtotal = 0,
+          service = 0,
+          taxes = 0,
+          tip = 0,
+          total = 0,
+          items = [],
+        } = order;
+
+        const time = new Date(createdAt).toLocaleTimeString("it-IT", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        return {
+          orderId,
+          tableNumber,
+          time,
+          status: paid ? "Pagato" : "Aperto",
+          tip: tip > 0 ? tip.toFixed(2).replace(".", ",") + " €" : "-",
+          total: total.toFixed(2).replace(".", ",") + " €",
+          subtotal: subtotal.toFixed(2).replace(".", ",") + " €",
+          service: service.toFixed(2).replace(".", ",") + " €",
+          items: items.map((item) => ({
+            name: item.name + (item.quantity > 1 ? ` (x ${item.quantity})` : ""),
+            price: (item.price * item.quantity).toFixed(2).replace(".", ",") + " €",
+          })),
+        };
+      });
+
+      return tables;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
 const tableSlice = createSlice({
   name: 'tables',
-  initialState,
+  initialState: {
+    tables: [],
+    loading: false,
+    error: null,
+  },
   reducers: {
-    toggleTableStatus(state, action) {
-      const id = action.payload;
-      const table = state.tables.find((t) => t.id === id);
-      if (table) {
-        table.status = table.status === "Pagato" ? "Aperto" : "Pagato";
-      }
-    },
+    // DISATTIVATO: lo stato dei tavoli ora viene gestito dal backend
+    // toggleTableStatus(state, action) {
+    //   const id = action.payload;
+    //   const table = state.tables.find((t) => t.id === id);
+    //   if (table) {
+    //     table.status = table.status === "Pagato" ? "Aperto" : "Pagato";
+    //   }
+    // },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchTablesFromOrders.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTablesFromOrders.fulfilled, (state, action) => {
+        state.tables = action.payload;
+        state.loading = false;
+      })
+      .addCase(fetchTablesFromOrders.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Errore nel caricamento dei tavoli.";
+      });
   },
 });
 
-export const { toggleTableStatus } = tableSlice.actions;
 export default tableSlice.reducer;
