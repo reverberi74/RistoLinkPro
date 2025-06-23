@@ -1,6 +1,6 @@
 import BackButton from "../../components/shared/BackButton";
 import { useLocation, useNavigate } from "react-router-dom";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useToast } from "../../hooks/useToast";
 import JSConfetti from "js-confetti";
 import { useApi } from "../../hooks/useApi";
@@ -11,7 +11,7 @@ export default function ConfirmPayment() {
   const location = useLocation();
   const orderId = location.state?.orderId || localStorage.getItem("lastOrderId");
 
-  
+  // Stato iniziale
   const navigate = useNavigate();
   const { toast } = useToast();
   const [feedback, setFeedback] = useState("");
@@ -49,19 +49,33 @@ export default function ConfirmPayment() {
 
   const [content, setContent] = useState(""); // textarea
   const restaurantOwnerId = "6809247099bda8ef6880c799"; // ID statico per test
-  const tableNumber = Math.floor(Math.random() * 20) + 1; // numero tavolo random da 1 a 20 (test)
-  const { post } = useApi();
+  const { post, get } = useApi();
+  const [tableNumber, setTableNumber] = useState(null);
+
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      if (!orderId) return;
+      try {
+        const order = await get(`/orders/${orderId}`);
+        setTableNumber(order.tableNumber); // <-- qui recuperi il numero tavolo reale
+      } catch (error) {
+        toast.error("Errore nel recupero dell'ordine.");
+        console.error(error);
+      }
+    };
+    fetchOrderDetails();
+  }, [orderId]);
 
   const handleSubmitOrder = async () => {
     try {
       await post("/reviews", {
         user: restaurantOwnerId,
         content,
-        table: tableNumber,
         rating,
+        table: tableNumber, 
       });
-      handleCelebrate();
 
+      handleCelebrate();
       toast.success("Il tuo feedback è stato inviato!");
       navigate("/private/categories");
     } catch (error) {
@@ -71,12 +85,12 @@ export default function ConfirmPayment() {
   };
 
   if (!orderId) {
-  return (
-    <div className="text-center text-red-500 font-bold mt-10">
-      Ordine non trovato
-    </div>
-  );
-}
+    return (
+      <div className="text-center text-red-500 font-bold mt-10">
+        Ordine non trovato
+      </div>
+    );
+  }
 
   console.log(rating);
 
@@ -195,11 +209,10 @@ export default function ConfirmPayment() {
                 className={`
     bg-cyan-500 text-white flex items-center justify-center gap-2 rounded-full px-6 py-1.5 font-semibold
     w-[273px] h-[39px] mt-2 transition
-    ${
-      canSubmit && !isCelebrating
-        ? "hover:scale-105 active:scale-95 shadow-lg"
-        : "opacity-50 cursor-not-allowed"
-    }
+    ${canSubmit && !isCelebrating
+                    ? "hover:scale-105 active:scale-95 shadow-lg"
+                    : "opacity-50 cursor-not-allowed"
+                  }
     animate-bounce
 `}
                 style={{ width: 273, height: 39, borderRadius: 99 }}
