@@ -29,7 +29,6 @@ const createOrderFromCart = async (req, res) => {
     });
 
     return res.status(201).json(newOrder);
-    console.log("user" + req.user);
   } catch (err) {
     outError(res, err);
   }
@@ -48,6 +47,23 @@ const getActiveOrdersByUser = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({ message: "Nessun ordine attivo" });
+    }
+
+    return res.status(200).json(order);
+  } catch (err) {
+    outError(res, err);
+  }
+};
+
+/**
+ * Recupera un ordine specifico tramite ID (usato da Payments.jsx)
+ */
+const getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId).lean();
+
+    if (!order) {
+      return res.status(404).json({ message: "Ordine non trovato" });
     }
 
     return res.status(200).json(order);
@@ -89,14 +105,23 @@ const updateItemStatus = async (req, res) => {
  */
 const markOrderAsPaid = async (req, res) => {
   const { orderId } = req.params;
+  const { tipAmount } = req.body;
 
   try {
-    await Order.findByIdAndUpdate(orderId, {
-      paid: true,
-      status: "paid" // solo se usi anche lo stato stringa
-    });
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: "Ordine non trovato" });
 
-    return res.status(200).json({ message: "Ordine segnato come pagato" });
+    const updatedTip = Number(tipAmount) || 0;
+    const newTotal = order.total + updatedTip;
+
+    order.paid = true;
+    order.status = "paid";
+    order.tip = updatedTip;
+    order.total = newTotal;
+
+    await order.save();
+
+    return res.status(200).json({ message: "Ordine aggiornato con successo", order });
   } catch (err) {
     outError(res, err);
   }
@@ -128,4 +153,5 @@ module.exports = {
   updateItemStatus,
   markOrderAsPaid,
   getAllOrders,
+  getOrderById,
 };

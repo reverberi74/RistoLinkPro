@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from "react-router-dom";
 import InfoBox from '../../components/shared/InfoBox';
 import { useToast } from '../../hooks/useToast';
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { clearOrder } from '../../store/slices/orderSlice';
 import { useDispatch } from 'react-redux';
 import { clearCart } from '../../store/slices/cartSlice';
-import { useSelector } from 'react-redux';
+import { useApi } from "../../hooks/useApi";
 /**
  * Componente `Payments`:
  * 
@@ -18,32 +17,56 @@ import { useSelector } from 'react-redux';
 const Payments = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const cart = useSelector((state) => state.cart);
-  const location = useLocation();
+  const { get, put } = useApi();
+  const [orderData, setOrderData] = useState(null);
   const { toast } = useToast();
 
   const [selectedTip, setSelectedTip] = useState(null);
-  const [subtotal, setSubtotal] = useState(0);
-  const [totalAmount, setTotalAmount] = useState(0);
+  const location = useLocation();
+  const orderId = location.state?.orderId;
 
   useEffect(() => {
-    const sum = (cart.items || []).reduce((acc, item) => acc + item.price * item.quantity, 0);
-    setSubtotal(sum);
-  }, [cart]);
+    if (!orderId) {
+      toast.error("Ordine non trovato");
+      navigate("/private/payments");
+      return;
+    }
 
-  useEffect(() => {
-    const tax = subtotal * 0.1;
-    const service = 2
-    const tip = selectedTip?.amount || 0;
-    setTotalAmount(subtotal + tax + service + tip);
-  }, [subtotal, selectedTip]);
+    const fetchOrder = async () => {
+      try {
+        const res = await get(`/orders/${orderId}`);
+        setOrderData(res); // o res.data a seconda del tuo hook
+      } catch (err) {
+        console.error("Errore nel recupero dell’ordine:", err);
+      }
+    };
+
+    fetchOrder();
+  }, [orderId]);
+
+  const baseTotal = orderData?.total || 0;
+  const tip = selectedTip?.amount || 0;
+  const totalAmount = baseTotal + tip;
 
 
-  const handleCompletePayment = () => {
-    navigate("/private/confirm-payment");
-    dispatch(clearOrder());
-    dispatch(clearCart());
-    toast.success("Pagamento inviato!");
+  const handleCompletePayment = async () => {
+    try {
+      await put(`/orders/${orderId}/paid`, {
+        tipAmount: selectedTip?.amount || 0,
+      });
+
+      dispatch(clearOrder());
+      dispatch(clearCart());
+      toast.success("Pagamento completato!");
+
+      localStorage.setItem("lastOrderId", orderId);
+      navigate("/private/confirm-payment", {
+        state: { orderId },
+      });
+    } catch (err) {
+      toast.error("Errore nel pagamento");
+      console.error("Errore pagamento:", err);
+    }
   };
 
   const svgIcon = (
@@ -106,7 +129,7 @@ const Payments = () => {
           <div className='mx-5'>
             <InfoBox
               title="Importo totale"
-              value={totalAmount.toFixed(2)}
+              value={`${totalAmount.toFixed(2)} `}
               unit=" €"
               icon={svgIcon}
             />

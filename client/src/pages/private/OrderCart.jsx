@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import OrderItem from "../../components/shared/orderItem";
 import { fetchActiveOrder, markOrderAsPaid } from "../../store/slices/orderSlice";
@@ -8,7 +8,8 @@ import { fetchActiveOrder, markOrderAsPaid } from "../../store/slices/orderSlice
 const OrderCart = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
+  const location = useLocation();
+  const orderId = location.state?.orderId;
 
   const {
     items = [],
@@ -25,6 +26,7 @@ const OrderCart = () => {
 
   const allServed = items.every((item) => item.status === "served");
 
+
   useEffect(() => {
     if (!user?._id || !token) return;
 
@@ -32,11 +34,9 @@ const OrderCart = () => {
       dispatch(fetchActiveOrder({ userId: user._id, token }));
     };
 
-    fetchOrder(); // Primo fetch immediato
-
-    const interval = setInterval(fetchOrder, 10000); // ogni 10s
-
-    return () => clearInterval(interval); // pulizia all'unmount
+    fetchOrder();
+    const interval = setInterval(fetchOrder, 10000);
+    return () => clearInterval(interval);
   }, [dispatch, user, token]);
 
   /*const handleConfirmPayment = () => {
@@ -92,7 +92,13 @@ const OrderCart = () => {
                   Paga in modo più intelligente
                 </span>
                 <button
-                  onClick={() => allServed && navigate("/private/payments")}
+                  onClick={() => {
+                    if (allServed) {
+                      navigate("/private/payments", {
+                        state: { orderId }, // 👈 passa l'orderId al componente Payments
+                      });
+                    }
+                  }}
                   disabled={!allServed}
                   className={`px-4 py-2 rounded-full text-sm shadow-elevation-1 ${allServed
                     ? "bg-white text-black cursor-pointer"

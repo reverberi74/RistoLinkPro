@@ -9,6 +9,9 @@ import CustomImage from "../../components/shared/CustomImage";
 export default function ConfirmPayment() {
   const [rating, setRating] = useState(0);
   const location = useLocation();
+  const orderId = location.state?.orderId || localStorage.getItem("lastOrderId");
+
+  
   const navigate = useNavigate();
   const { toast } = useToast();
   const [feedback, setFeedback] = useState("");
@@ -66,6 +69,14 @@ export default function ConfirmPayment() {
       console.error(error);
     }
   };
+
+  if (!orderId) {
+  return (
+    <div className="text-center text-red-500 font-bold mt-10">
+      Ordine non trovato
+    </div>
+  );
+}
 
   console.log(rating);
 

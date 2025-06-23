@@ -81,17 +81,20 @@ const Cart = () => {
     try {
       if (!token) throw new Error("Token mancante");
 
-      await axios.post("/orders", orderData, {
+      const res = await axios.post("/orders", orderData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
+      const createdOrder = res.data;
+      const orderId = createdOrder._id;
+
       toast.success("Il tuo ordine è stato inviato!");
-      navigate("/private/order-cart");
+      navigate("/private/order-cart", { state: { orderId } }); // 👈 Passaggio importante
     } catch (err) {
       toast.error("Errore nell'invio dell'ordine");
-      console.error(err);
+      console.error("Errore:", err);
     }
   };
 

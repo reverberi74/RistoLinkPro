@@ -4,6 +4,7 @@ const { authUser } = require("../../middleware/auth");
 const {
   createOrderFromCart,
   getActiveOrdersByUser,
+  getOrderById,
   updateItemStatus,
   markOrderAsPaid,
   getAllOrders,
@@ -23,5 +24,10 @@ router.put("/:orderId/paid", authUser(["user"]), markOrderAsPaid);
 
 // GET /api/orders/all → ottieni tutti gli ordini (business)
 router.get("/all", authUser(["business"]), getAllOrders);
+
+// GET /api/orders/:orderId → recupera ordine per ID (user)
+router.get("/:orderId", authUser(["user"]), getOrderById);
+
+
 
 module.exports = router;
